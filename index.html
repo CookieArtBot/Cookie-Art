@@ -1,1 +1,165 @@
-<h1>test</h1>
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>クッキー_イラストBot图片仓库</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.materialdesignicons.com/5.6.55/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.staticfile.org/vuetify/2.3.10/vuetify.min.css" style="margin-bottom: 0px;" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    <style>
+        .flex-center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .img-wrap {
+            width: 100%;
+            height: 180px;
+        }
+
+        .img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .b-wrap {
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cab">
+        <v-app>
+            <v-main>
+                <v-row justify="center">
+                    <v-col xs="12" sm="8" xl="6">
+                        <v-breadcrumbs :items="breadc">
+                            <template v-slot:item="{ item }">
+                                <a class="b-wrap">
+                                    <v-breadcrumbs-item :disabled="item.disabled" @click="path = item.path">
+                                        {{ item.text }}
+                                    </v-breadcrumbs-item>
+                                </a>
+                            </template>
+                        </v-breadcrumbs>
+                        <v-data-iterator :items="items" items-per-page="40" hide-default-footer>
+                            <template v-slot:default="props">
+                                <v-row v-if="content_loading == true" justify="center">
+                                    <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                                </v-row>
+                                <v-row v-if="content_loading == false">
+                                    <v-col v-for="item in props.items" :key="item.name" cols="12" sm="6" md="4" lg="3">
+                                        <v-hover v-slot:default="{ hover }">
+                                            <v-card :elevation="hover ? 8 : 2" @click="goin(item)">
+                                                <div class="flex-center img-wrap">
+                                                    <img v-if="item.type == 'file' && pd(item.name) == true" class="img"
+                                                        :src="'https://cdn.jsdelivr.net/gh/CookieArtBot/Cookie-Art/' + item.path" />
+                                                    <v-icon v-else-if="item.type == 'file' && pd(item.name) == false">
+                                                        mdi-file-outline</v-icon>
+                                                    <v-icon v-else-if="item.type == 'dir'">mdi-folder-outline</v-icon>
+                                                </div>
+                                                <v-divider></v-divider>
+                                                <p class="ma-2" v-text="item.name"></p>
+                                            </v-card>
+                                        </v-hover>
+                                    </v-col>
+                                </v-row>
+                            </template>
+                        </v-data-iterator>
+                    </v-col>
+                </v-row>
+                </v-content>
+        </v-app>
+    </div>
+    <script src="https://cdn.staticfile.org/vue/2.6.12/vue.min.js"></script>
+    <script src="https://cdn.staticfile.org/vuetify/2.3.10/vuetify.js"></script>
+    <script src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        let imgType = [".jpeg", ".jpg", "png", ".gif"];
+        let vuec = new Vue({
+            el: '#cab',
+            vuetify: new Vuetify(),
+            data: () => ({
+                path: '',
+                items: [],
+                breadc: [],
+                content_loading: false,
+            }),
+            watch: {
+                path(newValue) {
+                    this.update();
+                },
+            },
+            methods: {
+                update() {
+                    this.content_loading = true;
+                    this.breadc = pathToBreadc(this.path);
+                    $.ajax({
+                        url: `https://cab-github.herokuapp.com/file/${this.path}`,
+                        type: 'get',
+                        dataType: 'json',
+                        success: function (result) {
+                            vuec.content_loading = false;
+                            if (result.code == 0) {
+                                vuec.items = result.data;
+                            }
+                        }
+                    })
+                },
+                goin(item) {
+                    if (item.type == "dir") this.path = item.path;
+                    else window.open(`https://cdn.jsdelivr.net/gh/CookieArtBot/Cookie-Art/${item.path}`, "_blank");
+                },
+                pd(name) {
+                    let il = false;
+                    for (i in imgType) {
+                        if (name.indexOf(imgType[i]) != -1) {
+                            il = true;
+                            break
+                        }
+                    }
+                    return il
+                },
+            },
+        });
+        function pushr(arr1, arr2) {
+            for (i in arr2) {
+                arr1.push(arr2[i]);
+            }
+            return arr1
+        }
+        function pathToBreadc(path) {
+            let splited = path.split("/");
+            let ret = [{ text: 'root', disabled: false, path: "" }];
+            if (path == "") {
+                return [{ text: 'root', disabled: true, path: "" }];
+            } else if (splited.length > 1) {
+                for (i in splited) {
+                    let pt = [];
+                    let n;
+                    if (splited[eval(i) + 1] != undefined) {
+                        n = ret.push({ text: splited[i], disabled: false, path: '' });
+                    } else {
+                        n = ret.push({ text: splited[i], disabled: true, path: '' });
+                    }
+                    for (e in ret) {
+                        if (e != 0) {
+                            pt.push(ret[e].text)
+                        }
+                    }
+                    ret[n - 1].path = pt.join("/");
+                }
+                return ret;
+            } else {
+                ret.push({ text: path, disabled: true, path: path });
+                return ret;
+            }
+        }
+        vuec.update();
+    </script>
+</body>
+
+</html>
