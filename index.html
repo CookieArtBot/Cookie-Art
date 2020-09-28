@@ -45,7 +45,8 @@
                                 </a>
                             </template>
                         </v-breadcrumbs>
-                        <v-data-iterator :items="items" items-per-page="40" hide-default-footer>
+                        <v-data-iterator :items="items" :items-per-page.sync="itemsPerPage" :page="page"
+                            hide-default-footer>
                             <template v-slot:default="props">
                                 <v-row v-if="content_loading == true" justify="center">
                                     <v-progress-circular indeterminate color="primary"></v-progress-circular>
@@ -57,15 +58,44 @@
                                                 <div class="flex-center img-wrap">
                                                     <img v-if="item.type == 'file' && pd(item.name) == true" class="img"
                                                         :src="'https://cdn.jsdelivr.net/gh/CookieArtBot/Cookie-Art/' + item.path" />
-                                                    <v-icon v-else-if="item.type == 'file' && pd(item.name) == false">
+                                                    <v-icon v-else-if="item.type == 'file' && pd(item.name) == false" large>
                                                         mdi-file-outline</v-icon>
-                                                    <v-icon v-else-if="item.type == 'dir'">mdi-folder-outline</v-icon>
+                                                    <v-icon v-else-if="item.type == 'dir'" large>mdi-folder-outline</v-icon>
                                                 </div>
                                                 <v-divider></v-divider>
                                                 <p class="ma-2" v-text="item.name"></p>
                                             </v-card>
                                         </v-hover>
                                     </v-col>
+                                </v-row>
+                            </template>
+                            <template v-slot:footer>
+                                <v-row class="mt-2" align="center" justify="center">
+                                    <span class="grey--text">每页项目数</span>
+                                    <v-menu offset-y>
+                                        <template v-slot:activator="{ on, attrs }">
+                                            <v-btn dark text color="primary" class="ml-2" v-bind="attrs" v-on="on">
+                                                {{ itemsPerPage }}
+                                                <v-icon>mdi-chevron-down</v-icon>
+                                            </v-btn>
+                                        </template>
+                                        <v-list>
+                                            <v-list-item v-for="(number, index) in itemsPerPageArray" :key="index"
+                                                @click="updateItemsPerPage(number)">
+                                                <v-list-item-title>{{ number }}</v-list-item-title>
+                                            </v-list-item>
+                                        </v-list>
+                                    </v-menu>
+                                    <v-spacer></v-spacer>
+                                    <span class="mr-4 grey--text">
+                                        第 {{ page }} 页 共 {{ numberOfPages }} 页
+                                    </span>
+                                    <v-btn fab dark color="blue darken-3" class="mr-1" @click="formerPage">
+                                        <v-icon>mdi-chevron-left</v-icon>
+                                    </v-btn>
+                                    <v-btn fab dark color="blue darken-3" class="ml-1" @click="nextPage">
+                                        <v-icon>mdi-chevron-right</v-icon>
+                                    </v-btn>
                                 </v-row>
                             </template>
                         </v-data-iterator>
@@ -87,16 +117,25 @@
                 items: [],
                 breadc: [],
                 content_loading: false,
+                itemsPerPage: 20,
+                itemsPerPageArray: [20, 40, 80],
+                page: 1,
             }),
             watch: {
                 path(newValue) {
                     this.update();
                 },
             },
+            computed: {
+                numberOfPages() {
+                    return Math.ceil(this.items.length / this.itemsPerPage)
+                },
+            },
             methods: {
                 update() {
                     this.content_loading = true;
                     this.breadc = pathToBreadc(this.path);
+                    this.page = 1;
                     $.ajax({
                         url: `https://cab-github.herokuapp.com/file/${this.path}`,
                         type: 'get',
@@ -122,6 +161,15 @@
                         }
                     }
                     return il
+                },
+                nextPage() {
+                    if (this.page + 1 <= this.numberOfPages) this.page += 1
+                },
+                formerPage() {
+                    if (this.page - 1 >= 1) this.page -= 1
+                },
+                updateItemsPerPage(number) {
+                    this.itemsPerPage = number
                 },
             },
         });
